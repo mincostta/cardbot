@@ -9,7 +9,7 @@ async def connect_db():
             host='localhost', 
             port=3306,           
             user='root',         
-            password='agchristie02!',       
+            password='',       
             db='berrybot',
             autocommit=True,
             minsize=1,
