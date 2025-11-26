@@ -746,7 +746,7 @@ async def card_editimg(msg, bot, state):
         url = f"https://api.telegram.org/file/bot{TOKEN}/{path}"
 
         user = 0
-        bunny = await up_bunny(id, user, url, "jpg")
+        bunny = await up_bunny(card, user, url, "jpg")
 
         if bunny:
             async with get_cursor() as cursor:

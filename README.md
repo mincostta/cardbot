@@ -1,4 +1,4 @@
-# 🫐 **BerryBot - Telegram Card Collection Game (Beta)**
+# 🍓 **BerryBot - Telegram Card Collection Game (Beta)**
 
 Um bot interativo para o Telegram desenvolvido em **Python** com **Aiogram** e **MySQL**, onde os usuários podem **colecionar, trocar e vender cartas** de animes, k-pop, desenhos e muito mais. O bot combina mecânicas de jogo gacha com gestão de inventário e economia interna, tendo moedas próprias para compra de benefícios. Além disso, toda a temática é inspirada no desenho animado Moranguinho: Aventuras na Vila Tutti-Frutti, onde as cartas são chamadas de frutinhas e as moedas são sementes.
 

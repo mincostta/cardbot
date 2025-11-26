@@ -585,7 +585,6 @@ async def up_bunny(card, tlid, link, tipo):
         except Exception as e:
             print(f"⚠️ Não foi possível apagar: {e}")
     else:
-        midia = f"{card}"
         if isinstance(card, str):
             midia = card.replace(" ", "-")
             tipo = "sub"
@@ -596,7 +595,7 @@ async def up_bunny(card, tlid, link, tipo):
         else:
             tipo = "card"
             try:
-                ftp.delete(f"midias/cards/{midia}.jpg")
+                ftp.delete(f"midias/cards/{card}.jpg")
             except Exception as e:
                 print(f"⚠️ Não foi possível apagar: {e}")
     
@@ -619,10 +618,10 @@ async def up_bunny(card, tlid, link, tipo):
                         
                         upload = f"https://berrypull.b-cdn.net/midias/subs/{midia}.jpg"
                     else:
-                        ftp.storbinary(f"STOR midias/cards/{midia}.jpg", buffer)
+                        ftp.storbinary(f"STOR midias/cards/{card}.jpg", buffer)
                         ftp.quit()
                         
-                        upload = f"https://berrypull.b-cdn.net/midias/cards/{midia}.jpg"
+                        upload = f"https://berrypull.b-cdn.net/midias/cards/{card}.jpg"
                 return upload
             else:
                 print(f"❌ Erro no upload para Bunny.")
