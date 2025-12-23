@@ -641,8 +641,8 @@ async def midiaesp(card, tlid):
     
 # -------------------------------------------
 # LIDA COM TODOS OS CLIQUES EM BOTÕES DO BOT
-last_inline_click_time = {}
-inline_click_cooldown = timedelta(seconds=3)
+inline_locks = {}
+INLINE_COOLDOWN = timedelta(seconds=5)
 
 async def callback_query_func(call, bot, state):
     try:
@@ -652,16 +652,14 @@ async def callback_query_func(call, bot, state):
         user_id = call.from_user.id
         now = datetime.now()
 
-        if user_id in last_inline_click_time:
-            if call.data in last_inline_click_time[user_id]:
-                last_click_time = last_inline_click_time[user_id][call.data]
-                if now - last_click_time < inline_click_cooldown:
-                    await call.answer("⏱️ Não sobrecarregue o Berry com tantos cliques!")
-                    return
+        chave = (user_id, msg_id)
 
-        if user_id not in last_inline_click_time:
-            last_inline_click_time[user_id] = {}
-        last_inline_click_time[user_id][call.data] = now
+        if chave in inline_locks:
+            if now - inline_locks[chave] < INLINE_COOLDOWN:
+                await call.answer("⏱️ Não sobrecarregue o Berry com tantos cliques!")
+                return
+            
+        inline_locks[chave] = now
 
         match data:
             case "cancelar":
@@ -759,7 +757,7 @@ async def callback_query_func(call, bot, state):
                             if await midiaesp(card, tlid):
                                     await cursor.execute("UPDATE midiasesp SET midia = %s, tipo = %s WHERE id_user = %s AND id_carta = %s", (bunny, arq, tlid, card,))
                             else:
-                                await cursor.execute("INSERT INTO midiasesp (id_user, id_carta, midia, tipo) VALUES (%s, %s, %s, %s, %s)", (tlid, card, bunny, arq,))
+                                await cursor.execute("INSERT INTO midiasesp (id_user, id_carta, midia, tipo) VALUES (%s, %s, %s, %s)", (tlid, card, bunny, arq,))
                     else:
                         texto = "⚙️ Oops, houve algum erro ao tentar fazer upload da mídia."
                         resposta = f"⚙️ Oops, houve algum erro ao aprovar sua mídia para a frutinha `{card}`. Tente novamente!" 
@@ -1363,6 +1361,92 @@ async def callback_query_func(call, bot, state):
                     text=inventario_filtrado,
                     chat_id=chat_id,
                     message_id=msg_id,
+                    reply_markup=filt
+                )
+
+            case _ if data.split('_')[0] == "filtC":
+                _, raridade, cat, sub, att_data, user_id, página, totalcards, pag = data.split('_')
+                raridade = int(raridade)
+                página = int(página)
+                total_pag = math.ceil(int(totalcards) / 15)
+
+                rare1 = "✅" if att_data == "atv" and raridade == 1 else "🥇"
+                rare2 = "✅" if att_data == "atv" and raridade == 2 else "🥈"
+                rare3 = "✅" if att_data == "atv" and raridade == 3 else "🥉"
+
+                if pag == "prox":
+                    página += 1
+                    if página > total_pag:
+                        await call.answer("🍂 Você já está na última página.")
+                        return
+                elif pag == "ant":
+                    página -= 1
+                    if página < 1:
+                        await call.answer("🍂 Você já está na primeira página.")
+                        return
+                else:
+                    página = 1
+
+                async with get_cursor() as cursor:
+                    offset = (página - 1) * 15
+                    if att_data == "atv":
+                        await cursor.execute("SELECT c.id, c.nome, c.raridade, COALESCE(i.quantidade, 0) FROM cartas c LEFT JOIN inventario i ON c.id = i.id_carta AND i.id_user = %s WHERE c.subcategoria = %s AND c.raridade = %s OR EXISTS (SELECT 1 FROM multisub m WHERE m.id = c.id AND m.subcategoria = %s) ORDER BY c.raridade ASC LIMIT 15 OFFSET %s", (user_id, sub, raridade, sub, offset,))
+                        col = await cursor.fetchall()
+                        await cursor.execute("SELECT SUM(quantidade) FROM inventario i INNER JOIN cartas c ON i.id_carta = c.id WHERE i.id_user = %s AND c.raridade = %s AND c.subcategoria = %s", (user_id, raridade, sub,))
+                        result = await cursor.fetchone()
+                        Ncards = result[0] if result[0] else 0
+                        await cursor.execute("SELECT COUNT(id) FROM cartas WHERE subcategoria = %s AND raridade = %s", (sub, raridade,))
+                        cards = await cursor.fetchone()
+                        totalcards = cards[0]
+                        
+                        att_data = "atv"
+                    else:
+                        att_data = "dtv"
+
+                        await cursor.execute("SELECT c.id, c.nome, c.raridade, COALESCE(i.quantidade, 0) FROM cartas c LEFT JOIN inventario i ON c.id = i.id_carta AND i.id_user = %s WHERE c.subcategoria = %s OR EXISTS (SELECT 1 FROM multisub m WHERE m.id = c.id AND m.subcategoria = %s) ORDER BY c.raridade ASC LIMIT 15 OFFSET %s", (user_id, sub, sub, offset,))
+                        col = await cursor.fetchall()
+                        await cursor.execute("SELECT SUM(quantidade) FROM inventario i INNER JOIN cartas c ON i.id_carta = c.id WHERE i.id_user = %s AND c.subcategoria = %s", (user_id, sub,))
+                        result = await cursor.fetchone()
+                        Ncards = result[0] if result[0] else 0
+                        await cursor.execute("SELECT COUNT(id) FROM cartas WHERE subcategoria = %s", (sub,))
+                        cards = await cursor.fetchone()
+                        totalcards = cards[0]
+                
+                épica = InlineKeyboardButton(text=rare1, callback_data=f'filtC_1_{cat}_{sub}_{'dtv' if raridade == 1 else 'atv'}_{user_id}_{página}_{totalcards}_none')
+                rara = InlineKeyboardButton(text=rare2, callback_data=f'filtC_2_{cat}_{sub}_{'dtv' if raridade == 2 else 'atv'}_{user_id}_{página}_{totalcards}_none')
+                comum = InlineKeyboardButton(text=rare3, callback_data=f'filtC_3_{cat}_{sub}_{'dtv' if raridade == 3 else 'atv'}_{user_id}_{página}_{totalcards}_none')
+
+                ant = InlineKeyboardButton(text="⬅️", callback_data=f"filtC_{raridade}_{cat}_{sub}_{att_data}_{user_id}_{página}_{totalcards}_ant")
+                prox = InlineKeyboardButton(text="➡️", callback_data=f"filtC_{raridade}_{cat}_{sub}_{att_data}_{user_id}_{página}_{totalcards}_prox")
+                
+                if not col:
+                    await call.answer("🍂 Não existem frutinhas dentro dessa filtragem.")
+                    return
+                
+                await call.answer()
+                
+                lista_cartas = "\n".join([f"{raridade_emojis.get(raridade, '❓')} `{id}`. {nome} (`{quantidade}`x) {get_emoji(quantidade)}" 
+                                for id, nome, raridade, quantidade in col])
+
+                filt = InlineKeyboardMarkup(inline_keyboard=[
+                    [épica, rara, comum],
+                    [ant, prox]
+                ])
+
+                total_pag = math.ceil(int(totalcards) / 15)
+
+                user = await bot.get_chat(user_id)
+                nome = f"{user.first_name} {user.last_name or ''}".strip()
+                nome = f"[{nome}](tg://user?id={user_id})"
+
+                col_filtrada = f"🧺 Esta é a sua colheita de {sub}, {nome}.\n{categoria_emojis.get(cat, '❓')} {totalcards} frutinhas no total, {Ncards} em sua plantação.\n💌 Página {página} de {total_pag}.\n\n{lista_cartas}\n\n🍄 Para consultar suas frutinhas, utilize /buscar."
+                col_filtrada += "\u200B"
+                col_filtrada += "  "
+
+                await bot.edit_message_caption(
+                    caption=col_filtrada,
+                    chat_id=call.message.chat.id,
+                    message_id=call.message.message_id,
                     reply_markup=filt
                 )
             

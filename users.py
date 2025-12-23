@@ -7,6 +7,7 @@ import os
 import requests
 import time
 
+from collections import Counter
 from ftplib import FTP
 from dotenv import load_dotenv
 from datetime import datetime
@@ -100,82 +101,92 @@ async def saque(bot, msg):
     if len(saque) < 3:
         await msg.reply("⚙️ Oops, parece que falta algo... Exemplo: /safra categoria quantidade.")
         return
-    else:
-        quantidade = saque[2]
-        cat = saque[1].upper()
 
-    if cat not in ("MORANGEEK", "ASIAFARM", "STREAMBERRY", "FRUITMIX"):
-        await msg.reply("⚙️ Oops, essa categoria não existe.")
-        return
-    
+    cat = saque[1].upper()
     try:
-        quantidade = int(quantidade)
+        quantidade = int(saque[2])
     except ValueError:
         await msg.reply("⚙️ Oops, parece que você não informou um número válido.")
         return
 
+    if cat not in ("MORANGEEK", "ASIAFARM", "STREAMBERRY", "FRUITMIX"):
+        await msg.reply("⚙️ Oops, essa categoria não existe.")
+        return
+
     async with get_cursor() as cursor:
-        await cursor.execute("SELECT giros FROM usuarios WHERE telegram_id = %s", (user_id,))
-        result = await cursor.fetchone()
-        giros = int(result[0])
+        await cursor.execute(
+            "SELECT giros FROM usuarios WHERE telegram_id = %s",
+            (user_id,)
+        )
+        giros = int((await cursor.fetchone())[0])
 
         if giros == 0:
-            await msg.reply("Infelizmente você está sem giros no momento! Seu pomar sempre renova às 12:00 e às 00:00, volte mais tarde para colher. 🍃")
+            await msg.reply("Infelizmente você está sem giros no momento! 🍃")
             return
-        elif giros < quantidade:
-            await msg.reply(f"Oops, você não tem materiais o suficiente para completar essa safra. \n\n🌾 Você possui {giros} colheitas.")
+        if giros < quantidade:
+            await msg.reply(f"Oops, você possui apenas {giros} colheitas.")
             return
-        else:
-            giros = giros - quantidade
 
-            user = await bot.get_chat(user_id)
-            nome = f"{user.first_name} {user.last_name or ''}".strip()
+        await cursor.execute(
+            "UPDATE usuarios SET giros = giros - %s WHERE telegram_id = %s",
+            (quantidade, user_id)
+        )
 
-            if quantidade <= 15:
-                nome = f"[{nome}](tg://user?id={user_id})"
+        await cursor.execute("""
+            SELECT id, raridade, nome, subcategoria
+            FROM cartas
+            WHERE categoria = %s
+        """, (cat,))
+        cartas = await cursor.fetchall()
 
-            texto = f"🌾 Parabéns, {nome}! Com {quantidade} colheitas, sua safra rendeu:\n"
-            
-            chances = [20, 30, 50]
-            texto2 = ""
-            texto3 = ""
-            for i in range(quantidade):
-                raridade_escolhida = random.choices([1, 2, 3], weights=chances, k=1)[0]
-                await cursor.execute("SELECT id, raridade, nome, subcategoria FROM cartas WHERE categoria = %s AND raridade = %s ORDER BY RAND() LIMIT 1", (cat, raridade_escolhida,))
-                result = await cursor.fetchone()
+        cartas_por_raridade = {1: [], 2: [], 3: []}
+        for c in cartas:
+            cartas_por_raridade[c[1]].append(c)
 
-                if result:
-                    carta = result[0]
-                    raridade = result[1]
-                    nome = result[2]
-                    sub = result[3]
-                else:
-                    await cursor.execute("SELECT id, raridade, nome, subcategoria FROM cartas WHERE categoria = %s AND raridade = 2 ORDER BY RAND() LIMIT 1", (cat,))
-                    result = await cursor.fetchone()
-                    carta = result[0]
-                    raridade = result[1]
-                    nome = result[2]
-                    sub = result[3]
+        raridades = random.choices([1, 2, 3], weights=[20, 30, 50], k=quantidade)
+        qtd_por_raridade = Counter(raridades)
 
-                Ncards = await carta_user(user_id, carta, cursor)
+        resultado = Counter()
+        for raridade, qtd in qtd_por_raridade.items():
+            pool = cartas_por_raridade.get(raridade)
+            if not pool:
+                pool = cartas_por_raridade.get(2)
 
-                if Ncards == None:
-                    Ncards = 1
-                    await cursor.execute("INSERT INTO inventario (id_user, id_carta, quantidade) VALUES (%s, %s, %s)", (user_id, carta, 1))      
-                else:
-                    Ncards += 1
-                    await cursor.execute("UPDATE inventario SET quantidade = %s WHERE id_user = %s AND id_carta = %s", (Ncards, user_id, carta,))
+            if not pool:
+                continue
 
-                if raridade == 1:
-                    texto += f"\n{raridade_emojis.get(raridade, '❓')} `{carta}`. {nome} — {sub} (`{Ncards}`x)."
-                elif raridade == 2:
-                    texto2 += f"\n{raridade_emojis.get(raridade, '❓')} `{carta}`. {nome} — {sub} (`{Ncards}`x)."
-                else:
-                    texto3 += f"\n{raridade_emojis.get(raridade, '❓')} `{carta}`. {nome} — {sub} (`{Ncards}`x)."
-            
-            await cursor.execute("UPDATE usuarios SET giros = %s WHERE telegram_id = %s", (giros, user_id,))
-            texto += texto2
-            texto += texto3
+            for _ in range(qtd):
+                carta = random.choice(pool)
+                resultado[carta] += 1
+
+        for carta, qtd in resultado.items():
+            carta_id = carta[0]
+            await cursor.execute("""
+                INSERT INTO inventario (id_user, id_carta, quantidade)
+                VALUES (%s, %s, %s) AS novo
+                ON DUPLICATE KEY UPDATE
+                    inventario.quantidade = inventario.quantidade + novo.quantidade
+            """, (user_id, carta_id, qtd))
+
+        user = await bot.get_chat(user_id)
+        nome_user = f"{user.first_name} {user.last_name or ''}".strip()
+        if quantidade <= 15:
+            nome_user = f"[{nome_user}](tg://user?id={user_id})"
+
+        texto = f"🌾 Parabéns, {nome_user}! Com {quantidade} colheitas, sua safra rendeu:\n"
+        texto2 = ""
+        texto3 = ""
+
+        for (carta_id, raridade, nome, sub), qtd in resultado.items():
+            linha = f"\n{raridade_emojis.get(raridade,'❓')} `{carta_id}`. {nome} — {sub} (`{qtd}`x)."
+            if raridade == 1:
+                texto += linha
+            elif raridade == 2:
+                texto2 += linha
+            else:
+                texto3 += linha
+
+        texto += texto2 + texto3
 
     if quantidade <= 15:
         await msg.reply(texto)
@@ -184,10 +195,15 @@ async def saque(bot, msg):
         caminho = "safra.txt"
         with open(caminho, "w", encoding="utf-8") as f:
             f.write(texto)
-        
-        arquivo = FSInputFile(caminho)
-        await bot.send_document(chat_id, document=arquivo, caption=f"🌾 Essas foram as {quantidade} frutinhas que você conseguiu em sua safra!", reply_to_message_id=msg.message_id)
+
+        await bot.send_document(
+            chat_id,
+            document=FSInputFile(caminho),
+            caption=f"🌾 Essas foram as {quantidade} frutinhas que você conseguiu em sua safra!",
+            reply_to_message_id=msg.message_id
+        )
         os.remove(caminho)
+
 
 # -------------------------------------------
 # COMANDO COLHEITA PARA VISUALIZAR UMA SUBCATEGORIA
@@ -209,11 +225,29 @@ async def colheita(bot, msg):
         imagem = result[2]
 
         async with get_cursor() as cursor:
-            await cursor.execute("SELECT c.id, c.nome, c.raridade, COALESCE(i.quantidade, 0) FROM cartas c LEFT JOIN inventario i ON c.id = i.id_carta AND i.id_user = %s WHERE c.subcategoria = %s OR EXISTS (SELECT 1 FROM multisub m WHERE m.id = c.id AND m.subcategoria = %s) ORDER BY c.raridade ASC", (id_user, subcategoria, subcategoria,))
+            await cursor.execute("SELECT c.id, c.nome, c.raridade, COALESCE(i.quantidade, 0) FROM cartas c LEFT JOIN inventario i ON c.id = i.id_carta AND i.id_user = %s WHERE c.subcategoria = %s OR EXISTS (SELECT 1 FROM multisub m WHERE m.id = c.id AND m.subcategoria = %s) ORDER BY c.raridade ASC LIMIT 15", (id_user, subcategoria, subcategoria,))
             cartas = await cursor.fetchall()
+            await cursor.execute("SELECT id FROM cartas WHERE subcategoria = %s", (subcategoria,))
+            totalC = await cursor.fetchall()
 
-        Ncards = len(cartas)
+        Ncards = len(totalC)
         total = sum(card[3] for card in cartas)
+
+        página = 1
+
+        filt = InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton(text="🥇", callback_data=f"filtC_1_{categoria}_{subcategoria}_atv_{id_user}_1_{Ncards}_none"),
+                InlineKeyboardButton(text="🥈", callback_data=f"filtC_2_{categoria}_{subcategoria}_atv_{id_user}_1_{Ncards}_none"),
+                InlineKeyboardButton(text="🥉", callback_data=f"filtC_3_{categoria}_{subcategoria}_atv_{id_user}_1_{Ncards}_none"),
+            ],
+            [
+                InlineKeyboardButton(text="⬅️", callback_data=f"filtC_0_{categoria}_{subcategoria}_dtv_{id_user}_1_{Ncards}_ant"),
+                InlineKeyboardButton(text="➡️", callback_data=f"filtC_0_{categoria}_{subcategoria}_dtv_{id_user}_1_{Ncards}_prox"),
+            ]
+        ])
+
+        total_pag = math.ceil(Ncards / 15)
 
         lista_cartas = "\n".join([f"{raridade_emojis.get(raridade, '❓')} `{id}`. {nome} (`{quantidade}`x) {get_emoji(quantidade)}" 
                                 for id, nome, raridade, quantidade in cartas])
@@ -222,12 +256,13 @@ async def colheita(bot, msg):
         nome_user = f"[{nome_user}](tg://user?id={id_user})"
 
         try:
-            caption = f"🧺 Esta é a sua colheita de {subcategoria}, {nome_user}.\n{categoria_emojis.get(categoria, '❓')} {Ncards} frutinhas no total, {total} em sua plantação. \n\n{lista_cartas} \n\n🍄 Para consultar suas frutinhas, utilize /buscar."
+            caption = f"🧺 Esta é a sua colheita de {subcategoria}, {nome_user}.\n{categoria_emojis.get(categoria, '❓')} {Ncards} frutinhas no total, {total} em sua plantação.\n💌 Página {página} de {total_pag}.\n\n{lista_cartas} \n\n🍄 Para consultar suas frutinhas, utilize /buscar."
             await bot.send_photo(
                 chat_id=msg.chat.id,
                 photo=f"{imagem}?nocache={int(time.time())}",
                 caption=caption,
-                reply_to_message_id=msg.message_id
+                reply_to_message_id=msg.message_id,
+                reply_markup=filt
             )
         except Exception as e:
             await msg.reply(f"⚙️ Erro ao enviar a imagem: {str(e)}")
@@ -323,7 +358,7 @@ async def buscar(bot, msg):
         if quantidade == None:
             quantidade = 0
 
-        id, nome, raridade, midia, categoria, subcategoria, tag, _ = result
+        id, nome, raridade, midia, categoria, subcategoria, tag = result
 
         nome_user = f"{msg.from_user.first_name} {msg.from_user.last_name or ''}".strip()
         nome_user = f"[{nome_user}](tg://user?id={id_user})"
@@ -973,6 +1008,7 @@ async def doarinv(telegram_id, msg):
         inv = await cursor.fetchall()
 
         if inv:
+            await cursor.execute("DELETE FROM inventario WHERE id_user = %s", (telegram_id,))
             Ncards = sum(carta[1] for carta in inv)
             doarinv = []
             for carta, quantidade in inv:
@@ -984,7 +1020,6 @@ async def doarinv(telegram_id, msg):
                 else:
                     await cursor.execute("INSERT INTO inventario (id_user, id_carta, quantidade) VALUES(%s, %s, %s)", (dest, carta, quantidade,))
             cartas = ", ".join([f"`{id}` {qtd}" for id, qtd in doarinv])
-            await cursor.execute("DELETE FROM inventario WHERE id_user = %s", (telegram_id,))
             await cursor.execute("INSERT INTO extrato (remetente, receptor, comando, quantidade, cartas) VALUES(%s, %s, %s, %s, %s)", (telegram_id, dest, "doarinv", Ncards, cartas,))
             await msg.reply(f"🍏 Todas as {Ncards} frutinhas da sua cestinha foram doadas com sucesso!")
         else:

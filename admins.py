@@ -1670,7 +1670,6 @@ async def deletar(telegram_id, msg, bot):
                         await msg.reply(f"🍊 Frutinha `{card}` deletada com sucesso.")
                         await bot.send_message(user, f"🐦‍⬛ Poxa vida! Um corvo comeu todas as suas frutinhas `{card}`, você ganhou {recompensa} sementes.") 
                     await cursor.execute("DELETE FROM cartas WHERE id = %s", (card,))
-                    await cursor.execute("UPDATE cartas SET id = id - 1 WHERE id > %s", (card,))
         except ValueError:
             sub = entrada[1]
             result = await exist_sub(sub, msg)
@@ -1707,7 +1706,4 @@ async def deletar(telegram_id, msg, bot):
                             await msg.reply(f"🍊 Colheita {sub} deletada com sucesso.")
                             await bot.send_message(user, f"🐦‍⬛ Poxa vida! Um corvo comeu todas as frutinhas da sua coleção {result[1]}, você ganhou {recompensa} sementes.") 
                     
-                    await cursor.execute("SELECT COUNT(*), MAX(id) FROM cartas WHERE subcategoria = %s", (sub,))
-                    contagem = await cursor.fetchone()
                     await cursor.execute("DELETE FROM divisoes WHERE subcategoria = %s", (sub,))
-                    await cursor.execute("UPDATE cartas SET id = id - %s WHERE id > %s", (contagem[0], contagem[1],))
