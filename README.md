@@ -1,54 +1,71 @@
-# 🍓 **BerryBot - Telegram Card Collection Game (Beta)**
+# 🍓 BerryBot — Telegram Card Collection Game
 
-Um bot interativo para o Telegram desenvolvido em **Python** com **Aiogram** e **MySQL**, onde os usuários podem **colecionar, trocar e vender cartas** de animes, k-pop, desenhos e muito mais. O bot combina mecânicas de jogo gacha com gestão de inventário e economia interna, tendo moedas próprias para compra de benefícios. Além disso, toda a temática é inspirada no desenho animado Moranguinho: Aventuras na Vila Tutti-Frutti, onde as cartas são chamadas de frutinhas e as moedas são sementes.
+BerryBot is an interactive Telegram bot developed as a freelance project using **Python, Aiogram, and MySQL**. It allows users to **collect, trade, and sell cards** featuring characters from anime, K-pop, cartoons, and other categories.
 
-## 🍉 **Principais Funcionalidades**
+The bot combines gacha-style game mechanics with inventory management and an in-game economy, featuring its own currency system used to purchase items and exclusive benefits.
 
-– **Giros diários:** jogadores giram cartas aleatórias por categoria e raridade.  
-– **Sistema de raridade:** cartas divididas em comum, rara e épica.  
-– **Loja integrada:** venda e compre cartas, giros e passe VIP.  
-– **Casamento e divórcio entre jogadores:** com confirmação e custo em moedas.  
-– **Trocas e doações:** envie cartas, moedas ou giros para outros usuários.  
-– **Descarte em lote:** elimine várias cartas de uma vez com comandos simples.  
-– **Sistema VIP:** mais giros diários e vantagens exclusivas.  
-– **Geração dinâmica de imagens:** o bot utiliza Pillow para compor perfis personalizados.  
-– **Banco de dados otimizado:** integração completa com **MySQL** via `mysql-connector-python`.  
-– **Arquitetura modular:** fácil manutenção e escalabilidade.  
+Its visual theme is inspired by the animated series *Strawberry Shortcake: Berry in the Big City* (Moranguinho: Aventuras na Vila Tutti-Frutti), where collectible cards are represented as little fruits (*frutinhas*) and the in-game currency is represented as seeds.
 
-## ⚙️ **Tecnologias Utilizadas**
+## 🍉 Key Features
 
-– Linguagem: Python 3.11+  
-– Framework Bot: Aiogram (async)  
-– Banco de Dados: MySQL  
-– ORM / Conector: mysql-connector-python  
-– Manipulação de Imagens: Pillow  
-– Armazenamento de mídia: FTP / BunnyStorage  
-– Hospedagem: Em desenvolvimento  
-– Organização: Estrutura modular com múltiplos arquivos (main, utils, admins, etc.) 
+- **Daily Spins:** Players can obtain random cards based on category and rarity.
+- **Rarity System:** Cards are classified into three rarity levels: Common, Rare, and Epic.
+- **Integrated Shop:** Buy and sell cards, spins, and VIP passes.
+- **Marriage and Divorce System:** Players can marry or divorce other users, with confirmation steps and in-game currency costs.
+- **Trading and Gifting:** Transfer cards, currency, and spins to other players.
+- **Bulk Card Disposal:** Remove multiple cards from the inventory using simple commands.
+- **VIP System:** Provides additional daily spins and exclusive benefits.
+- **Dynamic Image Generation:** Uses Pillow to generate personalized user profiles.
+- **Database Integration:** MySQL integration for data persistence and inventory management.
+- **Modular Architecture:** Organized codebase designed to facilitate maintenance and future improvements.
 
-## 🧩 **Status do Projeto**
+## ⚙️ Technologies
 
-**🧪 Versão Beta (v0.9)**  
-Todos os erros conhecidos foram tratados.  
-O bot está pronto para ser liberado a novos usuários.
+| Technology | Purpose |
+|---|---|
+| Python 3.11+ | Main programming language |
+| Aiogram | Asynchronous Telegram Bot framework |
+| MySQL | Relational database |
+| mysql-connector-python | Database connectivity |
+| Pillow | Image processing and generation |
+| FTP / BunnyStorage | Media storage |
 
-## ⚙️ **Como Executar o Projeto**
+## 🏗️ Project Overview
+
+- **Project Type:** Freelance Development
+- **Status:** Completed
+- **Deployment:** Managed by the clients who commissioned the project.
+
+The bot was developed and delivered as a freelance project. Server hosting and deployment infrastructure were handled independently by the clients.
+
+## ⚙️ Running the Project Locally
 
 ```bash
 git clone https://github.com/mincostta/cardbot.git
 cd cardbot
+
 python -m venv venv
-source venv\Scripts\activate  # ou venv/bin/activate em macOS e Linux
+
+# Windows
+venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
+
 pip install -r requirements.txt
+
 cp .env.example .env
 
 mysql -u root -p -e "CREATE DATABASE cardbot CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;"
+
 mysql -u root -p cardbot < bot_database.sql
 
-python berrybot.py/
+python berrybot.py
 ```
 
-## 🌐 **Contato**
+Before running the bot, configure the required environment variables in the `.env` file and ensure that the MySQL database is running.
 
-📬 [LinkedIn](https://www.linkedin.com/in/yasmin-costa-041aa52a3)  
-📧 [Email](mailto:yasmincostalima07@gmail.com)
+## 🌐 Contact
+
+- [LinkedIn](https://www.linkedin.com/in/yasmin-costa-041aa52a3)
+- [E-mail](mailto:yasmincostalima07@gmail.com)
