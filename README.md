@@ -6,6 +6,11 @@ The bot combines gacha-style game mechanics with inventory management and an in-
 
 Its visual theme is inspired by the animated series *Strawberry Shortcake: Berry in the Big City* (Moranguinho: Aventuras na Vila Tutti-Frutti), where collectible cards are represented as little fruits (*frutinhas*) and the in-game currency is represented as seeds.
 
+![Collect Card](./demo/colher.gif)
+![Daily Spins](./demo/regar.gif)
+![Card Inventory](./demo/perfil.gif)
+![BerryBot Profile](./demo/perfil.gif)
+
 ## 🍉 Key Features
 
 - **Daily Spins:** Players can obtain random cards based on category and rarity.
