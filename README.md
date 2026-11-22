@@ -6,27 +6,27 @@ The bot combines gacha-style game mechanics with inventory management and an in-
 
 Its visual theme is inspired by the animated series *Strawberry Shortcake: Berry in the Big City* (Moranguinho: Aventuras na Vila Tutti-Frutti), where collectible cards are represented as little fruits (*frutinhas*) and the in-game currency is represented as seeds.
 
-<tr>
-    <td align="center">
-      <strong>🎴 Card Spinning</strong><br>
-      <img src="./demo/colher.gif" width="300">
-    </td>
-    <td align="center">
-      <strong>👤 User Profile</strong><br>
-      <img src="./demo/perfil.gif" width="300">
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <strong>🎁 Daily Bonus Spins</strong><br>
-      <img src="./demo/regar.gif" width="300">
-    </td>
-    <td align="center">
-      <strong>📚 Card Inventory</strong><br>
-      <img src="./demo/filtros.gif" width="300">
-    </td>
-  </tr>
-</table>
+## 🎮 Demo
+
+### 🎴 Card Spinning
+<p align="center">
+  <img src="./demo/colher.gif" width="400" alt="Card Spinning Demo">
+</p>
+
+### 👤 User Profile
+<p align="center">
+  <img src="./demo/perfil.gif" width="400" alt="User Profile Demo">
+</p>
+
+### 🎁 Daily Bonus Spins
+<p align="center">
+  <img src="./demo/regar.gif" width="400" alt="Daily Bonus Spins Demo">
+</p>
+
+### 📚 Card Inventory
+<p align="center">
+  <img src="./demo/filtros.gif" width="400" alt="Card Inventory Demo">
+</p>
 
 ## 🍉 Key Features
 
