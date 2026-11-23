@@ -8,22 +8,22 @@ Its visual theme is inspired by the animated series *Strawberry Shortcake: Berry
 
 ## 🎮 Demo
 
-### 🎴 Card Spinning
+### Card Spinning
 <p align="center">
   <img src="./demo/colher.gif" width="400" alt="Card Spinning Demo">
 </p>
 
-### 👤 User Profile
+### User Profile
 <p align="center">
   <img src="./demo/perfil.gif" width="400" alt="User Profile Demo">
 </p>
 
-### 🎁 Daily Bonus Spins
+### Daily Bonus Spins
 <p align="center">
   <img src="./demo/regar.gif" width="400" alt="Daily Bonus Spins Demo">
 </p>
 
-### 📚 Card Inventory
+### Card Inventory
 <p align="center">
   <img src="./demo/filtros.gif" width="400" alt="Card Inventory Demo">
 </p>
